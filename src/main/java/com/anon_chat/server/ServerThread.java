@@ -47,82 +47,99 @@ public class ServerThread extends Thread {
 
     @Override
     public void run() {
-        // Wait for client message
+        // Listen to client
         while (true) {
             try {
                 JSONObject fromClient = read();
                 String operation = fromClient.getString("operation");
 
-                // Receive:
-                // {
-                //   operation: "SET_NAME",
-                //   data: <name to set>
-                // }
-                if (operation.equals("SET_NAME")) {
-                    String name = fromClient.getString("data");
-
-                    boolean nameExisted = Server.clients.stream()
-                                                        .anyMatch(x -> x.name != null && x.name.equals(name));
-
-                    // Send:
+                switch (operation) {
+                    // Receive:
                     // {
-                    //   operation: "SET_NAME_RESPONSE",
-                    //   data: "FAIL" or "SUCCESS"
+                    //   operation: "SET_NAME",
+                    //   data: <name to set>
                     // }
-                    if (nameExisted) {
-                        this.write("SET_NAME_FAIL");
-                    } else {
-                        this.write("SET_NAME_SUCCESS");
-                        this.name = name;
+                    case "SET_NAME" -> {
+                        String name = fromClient.getString("data");
+                        boolean nameExisted = Server.clients.stream()
+                                                            .anyMatch(x -> x.name != null && x.name.equals(name));
+
+                        // Send:
+                        // {
+                        //   operation: "SET_NAME_RESPONSE",
+                        //   data: "FAIL" or "SUCCESS"
+                        // }
+                        if (nameExisted) {
+                            this.write("SET_NAME_FAIL");
+                        } else {
+                            this.write("SET_NAME_SUCCESS");
+                            this.name = name;
+                        }
                     }
-                }
 
-                // Receive:
-                // {
-                //   operation: "SEND_MESSAGE",
-                //   data: <message>
-                // }
-                if (operation.equals("SEND_MESSAGE")) {
-                    String message = fromClient.getString("data");
-
-                    // Send to other client:
+                    // Receive:
                     // {
-                    //   operation: "OTHER_CLIENT_SEND_MESSAGE",
+                    //   operation: "SEND_MESSAGE",
                     //   data: <message>
                     // }
-                    matchedClient.write("OTHER_CLIENT_SEND_MESSAGE", message);
-                }
+                    case "SEND_MESSAGE" -> {
+                        String message = fromClient.getString("data");
 
-                if (operation.equals("ACCEPT_MATCH")) {
-                    matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
-                }
+                        // Send to other client:
+                        // {
+                        //   operation: "OTHER_CLIENT_SEND_MESSAGE",
+                        //   data: <message>
+                        // }
+                        matchedClient.write("OTHER_CLIENT_SEND_MESSAGE", message);
+                    }
 
-                if (operation.equals("REFUSE_MATCH")) {
-                    matchedClient.write("OTHER_CLIENT_REFUSE_MATCH");
-                    blacklist.add(matchedClient);
-                    matchedClient = null;
-                }
+                    // Receive:
+                    // { operation: "ACCEPT_MATCH" }
+                    case "ACCEPT_MATCH" ->
+                            // Send to other client:
+                            // { operation: "OTHER_CLIENT_ACCEPT_MATCH" }
+                            matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
 
-                // Receive:
-                // { operation: "FIND_NEW_MATCH" }
-                if (operation.equals("FIND_NEW_MATCH")) {
-                    matchedClient = null;
-                }
 
-                // Receive:
-                // { operation: "DISCONNECT" }
-                if (operation.equals("DISCONNECT")) {
-                    // Send to matched client:
-                    // { operation: "OTHER_CLIENT_DISCONNECT" }
-                    matchedClient.write("OTHER_CLIENT_DISCONNECT");
-                    matchedClient = null;
+                    // Receive:
+                    // { operation: "REFUSE_MATCH" }
+                    case "REFUSE_MATCH" -> {
+                        // Send to other client:
+                        // { operation: "OTHER_CLIENT_REFUSE_MATCH" }
+                        matchedClient.write("OTHER_CLIENT_REFUSE_MATCH");
+
+                        // Add other client to blacklist, so we won't match again
+                        blacklist.add(matchedClient);
+
+                        // Clear matched client to find new client
+                        matchedClient = null;
+                    }
+
+                    // Receive:
+                    // { operation: "FIND_NEW_MATCH" }
+                    case "FIND_NEW_MATCH" ->
+                            // Clear matched client to find new client
+                            matchedClient = null;
+
+
+                    // Receive:
+                    // { operation: "DISCONNECT" }
+                    case "DISCONNECT" -> {
+                        // Send to matched client:
+                        // { operation: "OTHER_CLIENT_DISCONNECT" }
+                        matchedClient.write("OTHER_CLIENT_DISCONNECT");
+
+                        // Clear matched client to find new client
+                        matchedClient = null;
+                    }
                 }
             } catch (IOException e) {
+                // If error happens, break listen loop and disconnect client
                 break;
             }
         }
 
-        // Remove this client from server
+        // Remove this client from client list
         Server.clients.remove(this);
         System.out.println("Client " + this.id + " disconnected.");
 
@@ -132,6 +149,7 @@ public class ServerThread extends Thread {
                 matchedClient.write("OTHER_CLIENT_DISCONNECT");
             }
 
+            // Close connections
             close();
         } catch (IOException ignored) {
         }
