@@ -118,7 +118,6 @@ public class ServerThread extends Thread {
                     matchedClient = null;
                 }
             } catch (IOException e) {
-                e.printStackTrace();
                 break;
             }
         }
@@ -134,8 +133,7 @@ public class ServerThread extends Thread {
             }
 
             close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException ignored) {
         }
     }
 }

@@ -3,6 +3,7 @@ package com.anon_chat.client;
 import com.anon_chat.utils.IOStream;
 import com.anon_chat.utils.JSONUtils;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -33,16 +34,17 @@ public class App extends Application {
         return new JSONObject(io.receive());
     }
 
-    public static void close() throws IOException {
-        if (io != null)
-            io.close();
-        if (socket != null)
-            socket.close();
-    }
-
     @Override
     public void start(Stage primaryStage) throws IOException {
         stage = primaryStage;
+
+        // Close connection and exit program on window close
+        stage.setOnCloseRequest(windowEvent -> {
+            Platform.exit();
+            System.exit(0);
+        });
+
+        // Load set name view
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/set-name-view.fxml"));
         Scene scene = new Scene(loader.load(), 400, 138);
         primaryStage.setTitle("Chat với người lạ");

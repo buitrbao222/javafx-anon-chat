@@ -1,5 +1,6 @@
 package com.anon_chat.client;
 
+import com.anon_chat.utils.AlertUtils;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
@@ -41,7 +42,9 @@ public class MainController implements Initializable {
 
     public static String ourMatchResponse = null;
 
-    public void resetFindMatchState() {
+    public static String currentView = "MATCH"; // MATCH or CHAT
+
+    public void resetMatchState() {
         // Reset data
         otherClientName = null;
         otherClientMatchResponse = null;
@@ -55,37 +58,24 @@ public class MainController implements Initializable {
         refuseMatchButton.setVisible(false);
     }
 
-    // Happens in find match view
-    public void alertOtherClientRefuseMatch() {
-        // Show alert
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Thông báo");
-        alert.setHeaderText(otherClientName + " đã từ chối chat.");
-        alert.initOwner(App.stage);
-        alert.showAndWait();
-
-        // Reset find match data
-        resetFindMatchState();
-
-        // Send find new match request to server
-        try {
-            App.write("FIND_NEW_MATCH");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     // Happens in find match view or chat view
     public void alertOtherClientDisconnect() {
         // Show alert
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Thông báo");
-        alert.setHeaderText(otherClientName + " đã từ chối chat.");
-        alert.initOwner(App.stage);
-        alert.showAndWait();
+        String alertMessage;
+        if (currentView.equals("CHAT")) {
+            alertMessage = otherClientName + " đã rời chat.";
+        } else {
+            alertMessage = otherClientName + " đã từ chối chat.";
+        }
 
-        switchToFindMatchView();
-        resetFindMatchState();
+        AlertUtils.alertWarning(alertMessage);
+
+        // Switch to match view if currently in chat view
+        if (currentView.equals("CHAT")) {
+            switchToMatchView();
+        }
+
+        resetMatchState();
 
         // Send find new match request to server
         try {
@@ -126,7 +116,7 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
 
-        resetFindMatchState();
+        resetMatchState();
     }
 
     // Happens in chat view
@@ -137,12 +127,14 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
 
-        resetFindMatchState();
-        switchToFindMatchView();
+        resetMatchState();
+        switchToMatchView();
     }
 
     // Switch to chat view
     public void switchToChatView() {
+        currentView = "CHAT";
+
         // Load chat view
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/chat-view.fxml"));
@@ -163,15 +155,16 @@ public class MainController implements Initializable {
         });
 
         // Scroll to bottom on chat content VBox height change (new text come in)
-        chatContent.heightProperty().addListener((observableValue, oldValue, newValue) -> {
-            chatScrollPane.setVvalue((Double) newValue);
-        });
+        chatContent.heightProperty()
+                   .addListener((obsValue, oldValue, newValue) -> chatScrollPane.setVvalue((Double) newValue));
     }
 
     // Switch to accept match view
-    public void switchToFindMatchView() {
+    public void switchToMatchView() {
+        currentView = "MATCH";
+
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/find-match-view.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/match-view.fxml"));
             loader.setController(this);
             App.stage.getScene().setRoot(loader.load());
         } catch (IOException e) {
@@ -319,6 +312,7 @@ public class MainController implements Initializable {
                                 refuseMatchButton.setVisible(true);
                             });
                         }
+
                         case "OTHER_CLIENT_ACCEPT_MATCH" -> {
                             otherClientMatchResponse = "ACCEPT";
 
@@ -327,13 +321,14 @@ public class MainController implements Initializable {
                                 Platform.runLater(this::switchToChatView);
                             }
                         }
-                        case "OTHER_CLIENT_REFUSE_MATCH" -> Platform.runLater(this::alertOtherClientRefuseMatch);
+
+                        case "OTHER_CLIENT_REFUSE_MATCH", "OTHER_CLIENT_DISCONNECT" -> Platform.runLater(this::alertOtherClientDisconnect);
+
                         case "OTHER_CLIENT_SEND_MESSAGE" -> {
                             String message = fromServer.getString("data");
 
                             Platform.runLater(() -> addNewTextBox(message, false));
                         }
-                        case "OTHER_CLIENT_DISCONNECT" -> Platform.runLater(this::alertOtherClientDisconnect);
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

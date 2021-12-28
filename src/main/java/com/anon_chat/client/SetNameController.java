@@ -25,7 +25,7 @@ public class SetNameController implements Initializable {
         String name = nameTextField.getText();
 
         if (name.isEmpty()) {
-            AlertUtils.alert("Hãy nhập tên");
+            AlertUtils.alertWarning("Hãy nhập tên");
             return;
         }
 
@@ -39,13 +39,13 @@ public class SetNameController implements Initializable {
 
             // If name exists, show error then run loop again
             if (operation.equals("SET_NAME_FAIL")) {
-                AlertUtils.alert("Tên này đã có người sử dụng");
+                AlertUtils.alertWarning("Tên này đã có người sử dụng");
                 return;
             }
 
             // If name is valid, switch to match view
             if (operation.equals("SET_NAME_SUCCESS")) {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/find-match-view.fxml"));
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/match-view.fxml"));
                 MainController controller = new MainController();
                 loader.setController(controller);
                 Stage stage = (Stage) nameTextField.getScene().getWindow();
