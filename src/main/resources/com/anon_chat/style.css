@@ -1,0 +1,51 @@
+.our-text-box {
+    -fx-background-color: rgb(0, 132, 255);
+    -fx-padding: 8 12 8 12;
+}
+
+.our-text-box .message {
+    -fx-fill: white;
+    -fx-font-size: 16;
+}
+
+.our-text-box.alone {
+    -fx-background-radius: 18 18 18 18;
+}
+
+.our-text-box.first {
+    -fx-background-radius: 18 18 4 18;
+}
+
+.our-text-box.middle {
+    -fx-background-radius: 18 4 4 18;
+}
+
+.our-text-box.last {
+    -fx-background-radius: 18 4 18 18;
+}
+
+.their-text-box {
+    -fx-background-color: rgb(228, 230, 235);
+    -fx-padding: 8 12 8 12;
+}
+
+.their-text-box .message {
+    -fx-fill: black;
+    -fx-font-size: 16;
+}
+
+.their-text-box.alone {
+    -fx-background-radius: 18 18 18 18;
+}
+
+.their-text-box.first {
+    -fx-background-radius: 18 18 18 4;
+}
+
+.their-text-box.middle {
+    -fx-background-radius: 4 18 18 4;
+}
+
+.their-text-box.last {
+    -fx-background-radius: 4 18 18 18;
+}

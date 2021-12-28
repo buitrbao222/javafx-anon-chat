@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<VBox alignment="CENTER" spacing="16.0" xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/17"
+      fx:controller="com.anon_chat.client.SetNameController">
+    <padding>
+        <Insets bottom="16.0" left="16.0" right="16.0" top="16.0"/>
+    </padding>
+    <VBox spacing="4.0">
+        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Bạn tên là...">
+            <font>
+                <Font size="16.0"/>
+            </font>
+        </Text>
+        <TextField fx:id="nameTextField" promptText="Nhập tên">
+            <font>
+                <Font size="16.0"/>
+            </font>
+        </TextField>
+    </VBox>
+    <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" text="KẾT NỐI" onAction="#connect">
+        <font>
+            <Font name="System Bold" size="16.0"/>
+        </font>
+    </Button>
+</VBox>

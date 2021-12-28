@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<VBox alignment="CENTER" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" stylesheets="@style.css" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
+   <HBox alignment="CENTER_LEFT" nodeOrientation="LEFT_TO_RIGHT" style="-fx-background-color: white;">
+      <children>
+         <HBox alignment="CENTER_LEFT" spacing="12.0" HBox.hgrow="ALWAYS">
+            <children>
+               <ImageView fitHeight="40.0" fitWidth="40.0" pickOnBounds="true" preserveRatio="true">
+                  <HBox.margin>
+                     <Insets />
+                  </HBox.margin>
+                  <image>
+                     <Image url="@user-circle.png" />
+                  </image>
+               </ImageView>
+               <VBox alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+                  <children>
+                     <Text fx:id="otherClientNameText" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Other client's name">
+                        <font>
+                           <Font name="System Bold" size="16.0" />
+                        </font>
+                     </Text>
+                  </children>
+               </VBox>
+            </children>
+         </HBox>
+         <Button mnemonicParsing="false" onAction="#disconnect" text="Rời chat">
+            <font>
+               <Font size="16.0" />
+            </font>
+         </Button>
+      </children>
+      <padding>
+         <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+      </padding>
+   </HBox>
+    <ScrollPane fx:id="chatScrollPane" fitToHeight="true" fitToWidth="true" style="-fx-background-color: white;" VBox.vgrow="ALWAYS">
+        <VBox fx:id="chatContent" style="-fx-background-color: white;">
+         <padding>
+            <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+         </padding>
+        </VBox>
+      <VBox.margin>
+         <Insets />
+      </VBox.margin>
+    </ScrollPane>
+    <HBox maxWidth="1.7976931348623157E308" spacing="16.0" style="-fx-background-color: white;" VBox.vgrow="NEVER">
+        <VBox.margin>
+            <Insets />
+        </VBox.margin>
+        <TextField fx:id="textField" HBox.hgrow="ALWAYS">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </TextField>
+        <Button fx:id="sendButton" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#sendMessage" text="Gửi" HBox.hgrow="NEVER">
+            <font>
+                <Font size="16.0" />
+            </font>
+        </Button>
+      <padding>
+         <Insets bottom="16.0" left="16.0" right="16.0" top="16.0" />
+      </padding>
+    </HBox>
+</VBox>
