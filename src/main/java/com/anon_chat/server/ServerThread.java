@@ -121,7 +121,6 @@ public class ServerThread extends Thread {
                             // Clear matched client to find new client
                             matchedClient = null;
 
-
                     // Receive:
                     // { operation: "DISCONNECT" }
                     case "DISCONNECT" -> {

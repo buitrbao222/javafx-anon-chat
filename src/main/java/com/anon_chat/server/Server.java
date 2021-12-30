@@ -1,17 +1,20 @@
 package com.anon_chat.server;
 
+import com.anon_chat.utils.ListUtils;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 public class Server {
     public static final int port = 1234;
 
-    // Active handlers
+    // Threads to handle clients
     static final CopyOnWriteArrayList<ServerThread> clients = new CopyOnWriteArrayList<>(new ServerThread[]{});
 
     public static void main(String[] args) throws IOException {
@@ -37,23 +40,32 @@ public class Server {
                 }
 
                 // Get random client 1
-                Collections.shuffle(waitingClients);
-                ServerThread client1 = waitingClients.remove(0);
+                int randomIndex = ListUtils.getRandomIndex(waitingClients);
+                ServerThread client1 = waitingClients.remove(randomIndex);
 
-                // Get random client 2
-                Collections.shuffle(waitingClients);
-                ServerThread client2 = waitingClients.remove(0);
+                // Filter matchable clients for client 1
+                List<ServerThread> matchableClients = waitingClients.stream()
+                                                                    .filter(client2 -> !client1.blacklist.contains(client2) && !client2.blacklist.contains(client1))
+                                                                    .collect(Collectors.toList());
 
-                // If client 1 and 2 is unmatchable, do nothing
-                if (client1.blacklist.contains(client2) || client2.blacklist.contains(client1)) {
+                // If there are no matchable clients for client 1, do nothing
+                if (matchableClients.isEmpty()) {
                     continue;
                 }
 
-                // Client 1 and 2 is matchable
+                // Get random client 2
+                randomIndex = ListUtils.getRandomIndex(matchableClients);
+                ServerThread client2 = matchableClients.remove(randomIndex);
+
+                // Match client 1 and client 2
                 client1.matchedClient = client2;
                 client2.matchedClient = client1;
 
-                // { operation: "MATCH", data: <other client's name>}
+                // Send to both clients:
+                // {
+                //   operation: "MATCH",
+                //   data: <other client's name>
+                // }
                 try {
                     client1.write("MATCH", client2.name);
                     client2.write("MATCH", client1.name);
