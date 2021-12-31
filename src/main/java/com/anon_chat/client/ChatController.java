@@ -3,6 +3,7 @@ package com.anon_chat.client;
 import com.anon_chat.utils.AlertUtils;
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.HPos;
@@ -23,7 +24,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class MainController implements Initializable {
+public class ChatController implements Initializable {
     public ScrollPane chatScrollPane;
 
     public VBox chatContent;
@@ -32,141 +33,21 @@ public class MainController implements Initializable {
 
     public Text otherClientNameText;
 
-    public Text findMatchText;
-
-    public Button acceptMatchButton, refuseMatchButton;
-
-    public static String otherClientName = null;
-
-    public static String otherClientMatchResponse = null;
-
-    public static String ourMatchResponse = null;
-
-    public static String currentView = "MATCH"; // MATCH or CHAT
-
-    public void resetMatchState() {
-        // Reset data
-        otherClientName = null;
-        otherClientMatchResponse = null;
-        ourMatchResponse = null;
-
-        // Set waiting content
-        findMatchText.setText("Đang tìm người để chat...");
-
-        // Hide buttons
-        acceptMatchButton.setVisible(false);
-        refuseMatchButton.setVisible(false);
-    }
-
-    // Happens in find match view or chat view
-    public void alertOtherClientDisconnect() {
-        // Show alert
-        String alertMessage;
-        if (currentView.equals("CHAT")) {
-            alertMessage = otherClientName + " đã rời chat.";
-        } else {
-            alertMessage = otherClientName + " đã từ chối chat.";
-        }
-
-        AlertUtils.alertWarning(alertMessage);
-
-        // Switch to match view if currently in chat view
-        if (currentView.equals("CHAT")) {
-            switchToMatchView();
-        }
-
-        resetMatchState();
-
-        // Send find new match request to server
+    // Load find match view
+    public void openFindMatchView() {
         try {
-            App.write("FIND_NEW_MATCH");
+            FXMLLoader loader = new FXMLLoader(App.class.getResource("/com/anon_chat/find-match-view.fxml"));
+            App.stage.getScene().setRoot(loader.load());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void acceptMatch() {
-        ourMatchResponse = "ACCEPT";
-
-        // Set text
-        findMatchText.setText("Đang chờ " + otherClientName + " chấp nhận...");
-
-        // Hide buttons
-        acceptMatchButton.setVisible(false);
-        refuseMatchButton.setVisible(false);
-
-        try {
-            App.write("ACCEPT_MATCH");
-
-            // If both client accepted match, begin chat
-            if (otherClientMatchResponse != null && otherClientMatchResponse.equals("ACCEPT")) {
-                switchToChatView();
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    // Happens in find match view
-    public void refuseMatch() {
-        try {
-            App.write("REFUSE_MATCH");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        resetMatchState();
-    }
-
-    // Happens in chat view
+    // Disconnect from current chat and find new match
     public void disconnect() {
+        // Write disconnect request to server
         try {
             App.write("DISCONNECT");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        resetMatchState();
-        switchToMatchView();
-    }
-
-    // Switch to chat view
-    public void switchToChatView() {
-        currentView = "CHAT";
-
-        // Load chat view
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/chat-view.fxml"));
-            loader.setController(this);
-            App.stage.getScene().setRoot(loader.load());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Show other client name
-        otherClientNameText.setText(otherClientName);
-
-        // Send message on text field enter
-        textField.setOnKeyPressed(keyEvent -> {
-            if (keyEvent.getCode().equals(KeyCode.ENTER)) {
-                sendMessage();
-            }
-        });
-
-        // Scroll to bottom on chat content VBox height change (new text come in)
-        chatContent.heightProperty()
-                   .addListener((obsValue, oldValue, newValue) -> chatScrollPane.setVvalue((Double) newValue));
-    }
-
-    // Switch to accept match view
-    public void switchToMatchView() {
-        currentView = "MATCH";
-
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/match-view.fxml"));
-            loader.setController(this);
-            App.stage.getScene().setRoot(loader.load());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -281,9 +162,6 @@ public class MainController implements Initializable {
         // Clear text
         textField.setText("");
 
-        // Add our text box to UI
-        addNewTextBox(message, true);
-
         // Send message to server
         try {
             App.write("SEND_MESSAGE", message);
@@ -294,49 +172,74 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        Thread readMessage = new Thread(() -> {
-            while (true) {
-                try {
-                    // Read the message sent to this client
-                    JSONObject fromServer = App.read();
-
-                    String operation = fromServer.getString("operation");
-
-                    switch (operation) {
-                        case "MATCH" -> {
-                            otherClientName = fromServer.getString("data");
-
-                            Platform.runLater(() -> {
-                                findMatchText.setText("Chat với " + otherClientName + "?");
-                                acceptMatchButton.setVisible(true);
-                                refuseMatchButton.setVisible(true);
-                            });
-                        }
-
-                        case "OTHER_CLIENT_ACCEPT_MATCH" -> {
-                            otherClientMatchResponse = "ACCEPT";
-
-                            // If we accepted match first, begin chat
-                            if (ourMatchResponse != null && ourMatchResponse.equals("ACCEPT")) {
-                                Platform.runLater(this::switchToChatView);
-                            }
-                        }
-
-                        case "OTHER_CLIENT_REFUSE_MATCH", "OTHER_CLIENT_DISCONNECT" -> Platform.runLater(this::alertOtherClientDisconnect);
-
-                        case "OTHER_CLIENT_SEND_MESSAGE" -> {
-                            String message = fromServer.getString("data");
-
-                            Platform.runLater(() -> addNewTextBox(message, false));
-                        }
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
-                }
+        // Send message on text field enter
+        textField.setOnKeyPressed(keyEvent -> {
+            if (keyEvent.getCode().equals(KeyCode.ENTER)) {
+                sendMessage();
             }
         });
 
-        readMessage.start();
+        // Scroll to bottom on chat content VBox height change (new text come in)
+        chatContent.heightProperty()
+                   .addListener((obsValue, oldValue, newValue) -> chatScrollPane.setVvalue((Double) newValue));
+
+        Thread chatThread = new Thread(() -> {
+            System.out.println("\n----- Start chat thread");
+
+            try {
+                while (true) {
+                    // Read the message sent to this client
+                    JSONObject fromServer = App.read();
+
+                    System.out.println("Chat thread receive: " + fromServer);
+
+                    String operation = fromServer.getString("operation");
+
+                    if (operation.equals("OTHER_CLIENT_SEND_MESSAGE")) {
+                        String message = fromServer.getString("data");
+
+                        Platform.runLater(() -> addNewTextBox(message, false));
+                    }
+
+                    if (operation.equals("OTHER_CLIENT_DISCONNECT")) {
+                        Platform.runLater(() -> {
+                            // Show alert
+                            AlertUtils.alertWarning(otherClientNameText.getText() + " đã rời chat.");
+
+                            // Go back to find match view
+                            openFindMatchView();
+                        });
+
+                        // End thread
+                        System.out.println("----- End chat thread\n");
+                        return;
+                    }
+
+                    // Server confirms message is sent to other client
+                    if (operation.equals("SEND_MESSAGE_SUCCESS")) {
+                        String message = fromServer.getString("data");
+
+                        Platform.runLater(() -> addNewTextBox(message, true));
+                    }
+
+                    // If server confirms disconnected, go back to match view
+                    if (operation.equals("DISCONNECT_SUCCESS")) {
+                        Platform.runLater(this::openFindMatchView);
+
+                        // End thread
+                        System.out.println("----- End chat thread\n");
+                        return;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    AlertUtils.alertWarning("Mất kết nối với server.");
+                    App.closeApp();
+                });
+            }
+        });
+
+        chatThread.start();
     }
 }

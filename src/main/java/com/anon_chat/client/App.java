@@ -23,15 +23,22 @@ public class App extends Application {
     public static void write(String operation) throws IOException {
         String request = JSONUtils.createRequest(operation);
         io.send(request);
+        System.out.println("To server: " + request);
     }
 
     public static void write(String operation, String data) throws IOException {
         String request = JSONUtils.createRequest(operation, data);
         io.send(request);
+        System.out.println("To server: " + request);
     }
 
     public static JSONObject read() throws IOException {
         return new JSONObject(io.receive());
+    }
+
+    public static void closeApp() {
+        Platform.exit();
+        System.exit(0);
     }
 
     @Override
@@ -40,8 +47,7 @@ public class App extends Application {
 
         // Close connection and exit program on window close
         stage.setOnCloseRequest(windowEvent -> {
-            Platform.exit();
-            System.exit(0);
+            closeApp();
         });
 
         // Load set name view
