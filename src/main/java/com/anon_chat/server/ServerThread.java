@@ -117,9 +117,10 @@ public class ServerThread extends Thread {
 
                     // Receive:
                     // { operation: "FIND_NEW_MATCH" }
-                    case "FIND_NEW_MATCH" ->
-                            // Clear matched client to find new client
-                            matchedClient = null;
+                    case "FIND_NEW_MATCH" -> {
+                        // Clear matched client to find new client
+                        matchedClient = null;
+                    }
 
                     // Receive:
                     // { operation: "DISCONNECT" }

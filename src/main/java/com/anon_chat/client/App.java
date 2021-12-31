@@ -34,14 +34,18 @@ public class App extends Application {
         return new JSONObject(io.receive());
     }
 
+    public static void closeApp() {
+        Platform.exit();
+        System.exit(0);
+    }
+
     @Override
     public void start(Stage primaryStage) throws IOException {
         stage = primaryStage;
 
         // Close connection and exit program on window close
         stage.setOnCloseRequest(windowEvent -> {
-            Platform.exit();
-            System.exit(0);
+            closeApp();
         });
 
         // Load set name view

@@ -45,13 +45,12 @@ public class SetNameController implements Initializable {
 
             // If name is valid, switch to match view
             if (operation.equals("SET_NAME_SUCCESS")) {
-                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/match-view.fxml"));
-                MainController controller = new MainController();
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/find-match-view.fxml"));
+                FindMatchController controller = new FindMatchController();
                 loader.setController(controller);
-                Stage stage = (Stage) nameTextField.getScene().getWindow();
                 Scene scene = new Scene(loader.load(), 800, 600);
-                stage.setScene(scene);
-                stage.setResizable(true);
+                App.stage.setScene(scene);
+                App.stage.setResizable(true);
             }
         } catch (IOException e) {
             e.printStackTrace();
