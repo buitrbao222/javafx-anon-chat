@@ -61,19 +61,15 @@ public class ServerThread extends Thread {
                     // }
                     case "SET_NAME" -> {
                         String name = fromClient.getString("data");
-                        boolean nameExisted = Server.clients.stream()
-                                                            .anyMatch(x -> x.name != null && x.name.equals(name));
 
-                        // Send:
-                        // {
-                        //   operation: "SET_NAME_RESPONSE",
-                        //   data: "FAIL" or "SUCCESS"
-                        // }
-                        if (nameExisted) {
-                            this.write("SET_NAME_FAIL");
-                        } else {
-                            this.write("SET_NAME_SUCCESS");
-                            this.name = name;
+                        synchronized (Server.names) {
+                            if (Server.names.contains(name)) {
+                                this.write("SET_NAME_FAIL");
+                            } else {
+                                this.write("SET_NAME_SUCCESS");
+                                this.name = name;
+                                Server.names.add(name);
+                            }
                         }
                     }
 
@@ -85,21 +81,23 @@ public class ServerThread extends Thread {
                     case "SEND_MESSAGE" -> {
                         String message = fromClient.getString("data");
 
-                        // Send to other client:
-                        // {
-                        //   operation: "OTHER_CLIENT_SEND_MESSAGE",
-                        //   data: <message>
-                        // }
+                        // Forward message to other client
                         matchedClient.write("OTHER_CLIENT_SEND_MESSAGE", message);
+
+                        // Send success to current client
+                        write("SEND_MESSAGE_SUCCESS", message);
                     }
 
                     // Receive:
                     // { operation: "ACCEPT_MATCH" }
-                    case "ACCEPT_MATCH" ->
-                            // Send to other client:
-                            // { operation: "OTHER_CLIENT_ACCEPT_MATCH" }
-                            matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
+                    case "ACCEPT_MATCH" -> {
+                        // Send to other client:
+                        // { operation: "OTHER_CLIENT_ACCEPT_MATCH" }
+                        matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
 
+                        // Send success to client
+                        write("ACCEPT_MATCH_SUCCESS");
+                    }
 
                     // Receive:
                     // { operation: "REFUSE_MATCH" }
@@ -111,26 +109,36 @@ public class ServerThread extends Thread {
                         // Add other client to blacklist, so we won't match again
                         blacklist.add(matchedClient);
 
-                        // Clear matched client to find new client
+                        // Clear matched client to find new match
                         matchedClient = null;
+
+                        // Send to client
+                        write("FINDING_MATCH");
                     }
 
                     // Receive:
                     // { operation: "FIND_NEW_MATCH" }
                     case "FIND_NEW_MATCH" -> {
-                        // Clear matched client to find new client
+                        // Clear matched client
                         matchedClient = null;
+
+                        // Add client to waiting list
+                        synchronized (Server.waitingClients) {
+                            Server.waitingClients.add(this);
+                        }
+
+                        // Notify to client
+                        write("FINDING_MATCH");
                     }
 
                     // Receive:
                     // { operation: "DISCONNECT" }
                     case "DISCONNECT" -> {
-                        // Send to matched client:
-                        // { operation: "OTHER_CLIENT_DISCONNECT" }
+                        // Notify other client
                         matchedClient.write("OTHER_CLIENT_DISCONNECT");
 
-                        // Clear matched client to find new client
-                        matchedClient = null;
+                        // Notify to client
+                        write("DISCONNECT_SUCCESS");
                     }
                 }
             } catch (IOException e) {
@@ -140,13 +148,19 @@ public class ServerThread extends Thread {
         }
 
         // Remove this client from client list
-        Server.clients.remove(this);
+        Server.allClients.remove(this);
         System.out.println("Client " + this.id + " disconnected.");
+
+        // Remove name from name list
+        synchronized (Server.names) {
+            Server.names.remove(this.name);
+        }
 
         try {
             // Notify matched client if there is one
             if (matchedClient != null) {
                 matchedClient.write("OTHER_CLIENT_DISCONNECT");
+                matchedClient = null;
             }
 
             // Close connections

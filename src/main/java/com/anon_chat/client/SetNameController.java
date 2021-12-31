@@ -34,8 +34,11 @@ public class SetNameController implements Initializable {
             App.write("SET_NAME", name);
 
             // Wait for response from server
-            JSONObject response = App.read();
-            String operation = response.getString("operation");
+            JSONObject fromServer = App.read();
+
+            System.out.println("From server: " + fromServer);
+
+            String operation = fromServer.getString("operation");
 
             // If name exists, show error then run loop again
             if (operation.equals("SET_NAME_FAIL")) {
@@ -45,29 +48,23 @@ public class SetNameController implements Initializable {
 
             // If name is valid, switch to match view
             if (operation.equals("SET_NAME_SUCCESS")) {
+                System.out.println("----- End set name\n");
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/anon_chat/find-match-view.fxml"));
-                FindMatchController controller = new FindMatchController();
-                loader.setController(controller);
                 Scene scene = new Scene(loader.load(), 800, 600);
                 App.stage.setScene(scene);
                 App.stage.setResizable(true);
             }
         } catch (IOException e) {
             e.printStackTrace();
-
-            // Show alert
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Thông báo");
-            alert.setHeaderText(e.getMessage());
-            alert.showAndWait();
-
-            // Close app
-            Platform.exit();
+            AlertUtils.alertWarning("Mất kết nối với server.");
+            App.closeApp();
         }
     }
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        System.out.println("\n----- Start set name");
+
         // Connect on name text field enter
         nameTextField.setOnKeyPressed(keyEvent -> {
             if (keyEvent.getCode().equals(KeyCode.ENTER)) {

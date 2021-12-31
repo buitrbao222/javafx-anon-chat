@@ -23,11 +23,13 @@ public class App extends Application {
     public static void write(String operation) throws IOException {
         String request = JSONUtils.createRequest(operation);
         io.send(request);
+        System.out.println("To server: " + request);
     }
 
     public static void write(String operation, String data) throws IOException {
         String request = JSONUtils.createRequest(operation, data);
         io.send(request);
+        System.out.println("To server: " + request);
     }
 
     public static JSONObject read() throws IOException {

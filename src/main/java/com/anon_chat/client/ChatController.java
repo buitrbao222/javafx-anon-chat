@@ -33,74 +33,18 @@ public class ChatController implements Initializable {
 
     public Text otherClientNameText;
 
-    Thread chatThread = new Thread(() -> {
-        while (true) {
-            try {
-                // Read the message sent to this client
-                JSONObject fromServer = App.read();
-
-                String operation = fromServer.getString("operation");
-
-                if (operation.equals("OTHER_CLIENT_SEND_MESSAGE")) {
-                    String message = fromServer.getString("data");
-
-                    Platform.runLater(() -> addNewTextBox(message, false));
-                }
-
-                if (operation.equals("OTHER_CLIENT_DISCONNECT")) {
-                    // Open find match view
-                    Platform.runLater(this::alertOtherClientDisconnect);
-
-                    // End thread
-                    return;
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                break;
-            }
-        }
-    });
-
+    // Load find match view
     public void openFindMatchView() {
         try {
             FXMLLoader loader = new FXMLLoader(App.class.getResource("/com/anon_chat/find-match-view.fxml"));
-            FindMatchController controller = new FindMatchController();
-            loader.setController(controller);
             App.stage.getScene().setRoot(loader.load());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public void alertOtherClientDisconnect() {
-        String otherClientName = otherClientNameText.getText();
-
-        // Show alert
-        AlertUtils.alertWarning(otherClientName + " đã rời chat.");
-
-        // Write find new match request to server
-        try {
-            App.write("FIND_NEW_MATCH");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Go back to find match view
-        openFindMatchView();
-    }
-
-    // Leave chat
+    // Disconnect from current chat and find new match
     public void disconnect() {
-        // Go back to find match view
-        try {
-            FXMLLoader loader = new FXMLLoader(App.class.getResource("/com/anon_chat/find-match-view.fxml"));
-            FindMatchController controller = new FindMatchController();
-            loader.setController(controller);
-            App.stage.getScene().setRoot(loader.load());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         // Write disconnect request to server
         try {
             App.write("DISCONNECT");
@@ -218,9 +162,6 @@ public class ChatController implements Initializable {
         // Clear text
         textField.setText("");
 
-        // Add our text box to UI
-        addNewTextBox(message, true);
-
         // Send message to server
         try {
             App.write("SEND_MESSAGE", message);
@@ -242,7 +183,63 @@ public class ChatController implements Initializable {
         chatContent.heightProperty()
                    .addListener((obsValue, oldValue, newValue) -> chatScrollPane.setVvalue((Double) newValue));
 
-        // Start chat thread
+        Thread chatThread = new Thread(() -> {
+            System.out.println("\n----- Start chat thread");
+
+            try {
+                while (true) {
+                    // Read the message sent to this client
+                    JSONObject fromServer = App.read();
+
+                    System.out.println("Chat thread receive: " + fromServer);
+
+                    String operation = fromServer.getString("operation");
+
+                    if (operation.equals("OTHER_CLIENT_SEND_MESSAGE")) {
+                        String message = fromServer.getString("data");
+
+                        Platform.runLater(() -> addNewTextBox(message, false));
+                    }
+
+                    if (operation.equals("OTHER_CLIENT_DISCONNECT")) {
+                        Platform.runLater(() -> {
+                            // Show alert
+                            AlertUtils.alertWarning(otherClientNameText.getText() + " đã rời chat.");
+
+                            // Go back to find match view
+                            openFindMatchView();
+                        });
+
+                        // End thread
+                        System.out.println("----- End chat thread\n");
+                        return;
+                    }
+
+                    // Server confirms message is sent to other client
+                    if (operation.equals("SEND_MESSAGE_SUCCESS")) {
+                        String message = fromServer.getString("data");
+
+                        Platform.runLater(() -> addNewTextBox(message, true));
+                    }
+
+                    // If server confirms disconnected, go back to match view
+                    if (operation.equals("DISCONNECT_SUCCESS")) {
+                        Platform.runLater(this::openFindMatchView);
+
+                        // End thread
+                        System.out.println("----- End chat thread\n");
+                        return;
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                Platform.runLater(() -> {
+                    AlertUtils.alertWarning("Mất kết nối với server.");
+                    App.closeApp();
+                });
+            }
+        });
+
         chatThread.start();
     }
 }

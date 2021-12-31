@@ -7,4 +7,9 @@ public class ListUtils {
     public static int getRandomIndex(List<?> list) {
         return new Random().nextInt(list.size());
     }
+
+    public static <T> T removeRandomItem(List<T> list) {
+        int randomIndex = getRandomIndex(list);
+        return list.remove(randomIndex);
+    }
 }
