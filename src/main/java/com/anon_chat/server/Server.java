@@ -7,16 +7,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 public class Server {
     public static final int port = 1234;
-
-    // All clients
-    public static final CopyOnWriteArrayList<ServerThread> allClients = new CopyOnWriteArrayList<>(new ServerThread[]{});
 
     // Current names
     public static final List<String> names = Collections.synchronizedList(new ArrayList<>());
@@ -51,7 +45,7 @@ public class Server {
                     client1.matchedClient = client2;
                 } catch (IOException e) {
                     // If error occurs, don't need to send match request to client 2
-                    System.out.println("Error while matching client " + client1.id + " as client 1");
+                    System.out.println("Error while matching client " + client1);
                     e.printStackTrace();
                     continue;
                 }
@@ -62,7 +56,7 @@ public class Server {
                     client2.matchedClient = client1;
                 } catch (IOException e) {
                     // If error occurs, notify client 1 and continue loop
-                    System.out.println("Error while matching client " + client2.id + " as client 2");
+                    System.out.println("Error while matching client " + client2);
                     try {
                         client1.write("OTHER_CLIENT_DISCONNECT");
                     } catch (IOException ignored) {
@@ -73,8 +67,6 @@ public class Server {
                 waitingClients.remove(client1);
                 waitingClients.remove(client2);
             }
-
-
         }
     });
 
@@ -90,9 +82,6 @@ public class Server {
 
             // Create a new thread to handle this client
             ServerThread client = new ServerThread(socket);
-
-            // Add client to list
-            allClients.add(client);
 
             // Start thread for client
             client.start();

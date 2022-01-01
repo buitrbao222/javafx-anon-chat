@@ -4,9 +4,9 @@ import java.io.*;
 import java.net.Socket;
 
 public class IOStream {
-    private Socket socket;
-    private BufferedWriter out;
-    private BufferedReader in;
+    private final Socket socket;
+    private final BufferedWriter out;
+    private final BufferedReader in;
 
     public IOStream(Socket socket) throws IOException {
         this.socket = socket;

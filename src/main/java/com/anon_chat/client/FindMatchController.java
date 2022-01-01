@@ -66,6 +66,7 @@ public class FindMatchController implements Initializable {
             System.out.println("\n----- Start match thread");
 
             try {
+                // Request find new match
                 App.write("FIND_NEW_MATCH");
 
                 while (true) {
@@ -77,31 +78,31 @@ public class FindMatchController implements Initializable {
                     String operation = fromServer.getString("operation");
 
                     switch (operation) {
-                        // Received from server's match thread
-                        case "MATCH_FOUND" -> {
-                            // Save other client's name
-                            otherClientName = fromServer.getString("data");
-
-                            // Show prompt
-                            Platform.runLater(() -> updateUI(
-                                    "Chat với " + otherClientName + "?",
-                                    true));
-                        }
-
-                        // Received from our server thread
-                        case "FINDING_MATCH" -> {
+                        // Server handled find new match request
+                        case "FIND_NEW_MATCH_SUCCESS" -> {
                             // Reset data
                             ourMatchResponse = null;
                             otherClientMatchResponse = null;
                             otherClientName = null;
 
-                            // Reset UI
+                            // Show waiting
                             Platform.runLater(() -> updateUI(
                                     "Đang tìm người để chat...",
                                     false));
                         }
 
-                        // Received from our server thread
+                        // Server found match for us
+                        case "MATCH_FOUND" -> {
+                            // Save other client's name
+                            otherClientName = fromServer.getString("data");
+
+                            // Show match prompt
+                            Platform.runLater(() -> updateUI(
+                                    "Chat với " + otherClientName + "?",
+                                    true));
+                        }
+
+                        // Server handled our accept match request
                         case "ACCEPT_MATCH_SUCCESS" -> {
                             // If other client already accepted match
                             if (otherClientMatchResponse != null && otherClientMatchResponse.equals("ACCEPT")) {
@@ -117,6 +118,12 @@ public class FindMatchController implements Initializable {
                             Platform.runLater(() -> updateUI(
                                     "Đang chờ " + otherClientName + " chấp nhận...",
                                     false));
+                        }
+
+                        // Server handled our refuse match request
+                        case "REFUSE_MATCH_SUCCESS" -> {
+                            // Find new match
+                            App.write("FIND_NEW_MATCH");
                         }
 
                         // Received from other client's server thread

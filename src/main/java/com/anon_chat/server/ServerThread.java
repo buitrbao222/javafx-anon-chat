@@ -10,18 +10,14 @@ import java.util.ArrayList;
 import java.util.Date;
 
 public class ServerThread extends Thread {
-    public long id;
     public String name;
     public ServerThread matchedClient = null;
     public ArrayList<ServerThread> blacklist = new ArrayList<>();
-    public Socket socket;
     public IOStream io;
 
     public ServerThread(Socket socket) throws IOException {
-        this.id = new Date().getTime();
-        this.socket = socket;
         this.io = new IOStream(socket);
-        System.out.println("Client " + id + " connected.");
+        System.out.println("New client: " + this);
     }
 
     public void write(String operation) throws IOException {
@@ -41,8 +37,6 @@ public class ServerThread extends Thread {
     public void close() throws IOException {
         if (this.io != null)
             this.io.close();
-        if (this.socket != null)
-            this.socket.close();
     }
 
     @Override
@@ -109,11 +103,11 @@ public class ServerThread extends Thread {
                         // Add other client to blacklist, so we won't match again
                         blacklist.add(matchedClient);
 
-                        // Clear matched client to find new match
+                        // Clear matched client
                         matchedClient = null;
 
                         // Send to client
-                        write("FINDING_MATCH");
+                        write("REFUSE_MATCH_SUCCESS");
                     }
 
                     // Receive:
@@ -128,7 +122,7 @@ public class ServerThread extends Thread {
                         }
 
                         // Notify to client
-                        write("FINDING_MATCH");
+                        write("FIND_NEW_MATCH_SUCCESS");
                     }
 
                     // Receive:
@@ -147,9 +141,18 @@ public class ServerThread extends Thread {
             }
         }
 
-        // Remove this client from client list
-        Server.allClients.remove(this);
-        System.out.println("Client " + this.id + " disconnected.");
+        // Remove this client from waiting clients list
+        synchronized (Server.waitingClients) {
+            Server.waitingClients.remove(this);
+            System.out.println("Client disconnected: " + this);
+        }
+
+        // Remove this name from names list so new clients can use that name
+        if (this.name != null) {
+            synchronized (Server.names) {
+                Server.names.remove(this.name);
+            }
+        }
 
         // Remove name from name list
         synchronized (Server.names) {
