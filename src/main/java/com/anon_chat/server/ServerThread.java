@@ -147,13 +147,6 @@ public class ServerThread extends Thread {
         }
 
         // Remove this name from names list so new clients can use that name
-        if (this.name != null) {
-            synchronized (Server.names) {
-                Server.names.remove(this.name);
-            }
-        }
-
-        // Remove name from name list
         synchronized (Server.names) {
             Server.names.remove(this.name);
         }
