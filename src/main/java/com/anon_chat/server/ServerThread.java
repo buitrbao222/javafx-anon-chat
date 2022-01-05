@@ -4,10 +4,9 @@ import com.anon_chat.utils.IOStream;
 import com.anon_chat.utils.JSONUtils;
 import org.json.JSONObject;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Date;
 
 public class ServerThread extends Thread {
     public String name;

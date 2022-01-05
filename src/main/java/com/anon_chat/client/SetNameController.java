@@ -1,15 +1,12 @@
 package com.anon_chat.client;
 
 import com.anon_chat.utils.AlertUtils;
-import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
-import javafx.stage.Stage;
 import org.json.JSONObject;
 
 import java.io.IOException;
