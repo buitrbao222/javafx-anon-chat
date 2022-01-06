@@ -57,10 +57,12 @@ public class Server {
                 } catch (IOException e) {
                     // If error occurs, notify client 1 and continue loop
                     System.out.println("Error while matching client " + client2);
+                    e.printStackTrace();
                     try {
                         client1.write("OTHER_CLIENT_DISCONNECT");
                     } catch (IOException ignored) {
                     }
+                    continue;
                 }
 
                 // If 2 clients matched successfully, remove them from waiting clients
