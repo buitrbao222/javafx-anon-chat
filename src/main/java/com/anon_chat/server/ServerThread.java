@@ -75,7 +75,13 @@ public class ServerThread extends Thread {
                         String message = fromClient.getString("data");
 
                         // Forward message to other client
-                        matchedClient.write("OTHER_CLIENT_SEND_MESSAGE", message);
+                        try {
+                            matchedClient.write("OTHER_CLIENT_SEND_MESSAGE", message);
+                        } catch (IOException e) {
+                            // Error means other client disconnected
+                            write("OTHER_CLIENT_DISCONNECT");
+                            continue;
+                        }
 
                         // Send success to current client
                         write("SEND_MESSAGE_SUCCESS", message);
@@ -86,7 +92,13 @@ public class ServerThread extends Thread {
                     case "ACCEPT_MATCH" -> {
                         // Send to other client:
                         // { operation: "OTHER_CLIENT_ACCEPT_MATCH" }
-                        matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
+                        try {
+                            matchedClient.write("OTHER_CLIENT_ACCEPT_MATCH");
+                        } catch (IOException e) {
+                            // Error means other client disconnected
+                            write("OTHER_CLIENT_DISCONNECT");
+                            continue;
+                        }
 
                         // Send success to client
                         write("ACCEPT_MATCH_SUCCESS");
@@ -97,7 +109,10 @@ public class ServerThread extends Thread {
                     case "REFUSE_MATCH" -> {
                         // Send to other client:
                         // { operation: "OTHER_CLIENT_REFUSE_MATCH" }
-                        matchedClient.write("OTHER_CLIENT_REFUSE_MATCH");
+                        try {
+                            matchedClient.write("OTHER_CLIENT_REFUSE_MATCH");
+                        } catch (IOException ignored) {
+                        }
 
                         // Add other client to blacklist, so we won't match again
                         blacklist.add(matchedClient);
@@ -128,7 +143,10 @@ public class ServerThread extends Thread {
                     // { operation: "DISCONNECT" }
                     case "DISCONNECT" -> {
                         // Notify other client
-                        matchedClient.write("OTHER_CLIENT_DISCONNECT");
+                        try {
+                            matchedClient.write("OTHER_CLIENT_DISCONNECT");
+                        } catch (IOException ignored) {
+                        }
 
                         // Notify to client
                         write("DISCONNECT_SUCCESS");
